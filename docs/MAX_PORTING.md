@@ -6,7 +6,7 @@
 |--------------------|------------------|
 | `BOT_TOKEN` | `Authorization: <access_token>` |
 | `getUpdates` / webhook | `GET /updates` (long poll) или webhook из `POST /subscriptions` |
-| ЛС: `chat_id` | `user_id` query в `POST /messages` (см. доки) или `chat_id` в группах |
+| ЛС: `chat_id` | исходящие в ЛС: `POST /messages?chat_id=` (берём из `Update.chat_id`); `user_id` в query — для адресации по пользователю (см. доки) |
 | `sendMessage` + `reply_markup` | `POST /messages` + `attachments[].type=inline_keyboard` |
 | `callback_query` | событие `message_callback`; в кнопке `type: callback`, строка `payload` |
 | HTML | поле `format: "html"` в теле сообщения |
@@ -32,7 +32,7 @@
 3. **`app/bot/middlewares/access.py`** — фильтрация событий до логики доступа.
 4. **`app/services/broadcast_dispatch.py`** — интерфейс «отправить сообщение пользователю» без aiogram.
 5. **`app/bot/intro_media.py`** — отправка локального файла через API вложений MAX.
-6. **Тексты onboarding** — ссылки `t.me/...` заменить на формат приглашения MAX (когда будет известен шаблон deep link).
+6. **Тексты onboarding** — для MAX подсказка по приглашению: `https://max.ru/<ник>?start=<token>` (см. onboarding_core).
 
 ## Рекомендуемый порядок работ
 

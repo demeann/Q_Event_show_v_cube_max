@@ -61,8 +61,9 @@ class Settings(BaseSettings):
     allowed_email_domains: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     # ---------- Access (invite link) ----------
-    # INVITE_ONLY=true и непустой INVITE_START_TOKENS: первый вход только как
-    # https://t.me/<bot>?start=<token>, token из списка через запятую (без пробелов в значении).
+    # INVITE_ONLY=true и непустой INVITE_START_TOKENS: первый вход только по ссылке с ?start=<token>.
+    # Telegram: https://t.me/<bot>?start=<token>
+    # MAX: https://max.ru/<ник_бота>?start=<token> (см. dev.max.ru — deeplinks).
     invite_only: bool = False
     invite_start_tokens: Annotated[list[str], NoDecode] = Field(default_factory=list)
 

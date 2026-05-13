@@ -9,6 +9,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.time import now_utc
 from app.db.base import get_session
 from app.db.models import (
@@ -103,12 +104,16 @@ async def _process_due_broadcasts_with_session(
             await session.flush()
             await asyncio.sleep(_SEND_DELAY_SEC)
             continue
+        settings = get_settings()
+        max_chat = user.max_chat_id if settings.messenger_platform == "max" else None
         tg_id = int(user.telegram_user_id)
         try:
             if local_img is not None:
-                await messenger.send_photo_user(tg_id, local_img, text)
+                await messenger.send_photo_user(
+                    tg_id, local_img, text, chat_id=max_chat
+                )
             else:
-                await messenger.send_text_user(tg_id, text)
+                await messenger.send_text_user(tg_id, text, chat_id=max_chat)
             rec.status = RecipientStatus.SENT
             rec.sent_at = now_utc().replace(tzinfo=None)
             sent_c += 1

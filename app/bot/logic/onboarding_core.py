@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from app.bot.states import OnboardingStates
 from app.core.config import Settings
-from app.db.models import EmailValidationLog
+from app.db.models import EmailValidationLog, User
 from app.services.email_validation import check_corporate_email
 from app.services.user_service import get_or_create_user
 
@@ -18,6 +18,14 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+
+def _sync_max_chat_id(
+    user: User, settings: Settings, platform_chat_id: int | None
+) -> None:
+    if settings.messenger_platform == "max" and platform_chat_id is not None:
+        user.max_chat_id = platform_chat_id
+
 
 _WELCOME_NEW = (
     'Добро пожаловать в чат-бот для сотрудников Компании ООО "ФМСМ".\n\n'
@@ -40,12 +48,27 @@ _WELCOME_BACK = (
     "О старте следующего тура, мы пришлём уведомление."
 )
 
-_INVITE_REQUIRED = (
+_INVITE_REQUIRED_TELEGRAM = (
     "Бот доступен только по пригласительной ссылке.\n\n"
     "Открой ссылку из письма или сообщения от организаторов (формат: "
     "<code>t.me/...</code> с параметром <code>start</code>). "
     "Если ссылка есть, нажми её ещё раз и затем «Запустить» / Start."
 )
+
+_INVITE_REQUIRED_MAX = (
+    "Бот доступен только по пригласительной ссылке.\n\n"
+    "Открой ссылку из письма или сообщения от организаторов в MAX. Она должна "
+    "выглядеть так: "
+    "<code>https://max.ru/id500404603022_2_bot?start=секретный_код</code> "
+    "— в конце после <code>start=</code> должен быть тот же код, что в рассылке.\n\n"
+    "Нажми «Запустить бота» в приложении MAX."
+)
+
+
+def _invite_required_message(settings: Settings) -> str:
+    if settings.messenger_platform == "max":
+        return _INVITE_REQUIRED_MAX
+    return _INVITE_REQUIRED_TELEGRAM
 
 
 async def handle_start(
@@ -58,9 +81,11 @@ async def handle_start(
     reply_html: Callable[[str], Awaitable[None]],
     state_clear: Callable[[], Awaitable[None]],
     state_set_waiting_email: Callable[[], Awaitable[None]],
+    platform_chat_id: int | None = None,
 ) -> None:
     if settings.is_admin(user_id):
         user = await get_or_create_user(session, user_id, username)
+        _sync_max_chat_id(user, settings, platform_chat_id)
         user.is_admin = True
         if user.is_blocked:
             await reply_html(
@@ -78,6 +103,7 @@ async def handle_start(
         return
 
     user = await get_or_create_user(session, user_id, username)
+    _sync_max_chat_id(user, settings, platform_chat_id)
 
     if user.is_blocked:
         await reply_html(
@@ -103,7 +129,7 @@ async def handle_start(
     if settings.invite_link_enforced():
         if user.invite_gate_passed_at is None:
             if start_payload not in settings.invite_start_token_set:
-                await reply_html(_INVITE_REQUIRED)
+                await reply_html(_invite_required_message(settings))
                 await state_clear()
                 return
             user.invite_gate_passed_at = datetime.now(UTC).replace(tzinfo=None)
@@ -122,10 +148,12 @@ async def handle_waiting_email_text(
     reply_html: Callable[[str], Awaitable[None]],
     state_clear: Callable[[], Awaitable[None]],
     after_email_verified: Callable[[], Awaitable[None]] | None = None,
+    platform_chat_id: int | None = None,
 ) -> None:
     result = check_corporate_email(raw_email_text, settings.allowed_email_domains)
 
     user = await get_or_create_user(session, user_id, username)
+    _sync_max_chat_id(user, settings, platform_chat_id)
     if settings.is_admin(user.telegram_user_id):
         user.is_admin = True
 

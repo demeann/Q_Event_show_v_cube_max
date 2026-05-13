@@ -37,6 +37,7 @@ def test_users_columns():
     expected = {
         "id",
         "telegram_user_id",
+        "max_chat_id",
         "tg_username",
         "email",
         "email_domain",

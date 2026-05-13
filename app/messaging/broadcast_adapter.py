@@ -20,10 +20,19 @@ log = logging.getLogger(__name__)
 
 
 class BroadcastAdapter(Protocol):
-    async def send_text_user(self, user_id: int, text: str) -> None: ...
-    async def send_photo_user(
-        self, user_id: int, photo_path: Path, caption: str
+    async def send_text_user(
+        self, user_id: int, text: str, *, chat_id: int | None = None
     ) -> None: ...
+
+    async def send_photo_user(
+        self,
+        user_id: int,
+        photo_path: Path,
+        caption: str,
+        *,
+        chat_id: int | None = None,
+    ) -> None: ...
+
     async def send_tour_intro_with_keyboard(
         self,
         user_id: int,
@@ -31,6 +40,7 @@ class BroadcastAdapter(Protocol):
         rel_image_path: str,
         caption: str,
         reply_markup: InlineKeyboardMarkup,
+        chat_id: int | None = None,
     ) -> None: ...
 
 
@@ -38,7 +48,10 @@ class TelegramBroadcastAdapter:
     def __init__(self, bot: Bot) -> None:
         self._bot = bot
 
-    async def send_text_user(self, user_id: int, text: str) -> None:
+    async def send_text_user(
+        self, user_id: int, text: str, *, chat_id: int | None = None
+    ) -> None:
+        del chat_id
         try:
             await self._bot.send_message(user_id, text)
         except TelegramForbiddenError as e:
@@ -47,8 +60,14 @@ class TelegramBroadcastAdapter:
             raise MessengerBadRequestError(str(e)) from e
 
     async def send_photo_user(
-        self, user_id: int, photo_path: Path, caption: str
+        self,
+        user_id: int,
+        photo_path: Path,
+        caption: str,
+        *,
+        chat_id: int | None = None,
     ) -> None:
+        del chat_id
         cap = caption if len(caption) <= 1024 else (caption[:1021] + "…")
         try:
             await self._bot.send_photo(
@@ -68,7 +87,9 @@ class TelegramBroadcastAdapter:
         rel_image_path: str,
         caption: str,
         reply_markup: InlineKeyboardMarkup,
+        chat_id: int | None = None,
     ) -> None:
+        del chat_id
         try:
             await send_intro_push_to_user(
                 self._bot,
@@ -87,26 +108,41 @@ class MaxBroadcastAdapter:
     def __init__(self, client: MaxPlatformClient) -> None:
         self._client = client
 
-    async def send_text_user(self, user_id: int, text: str) -> None:
+    async def send_text_user(
+        self, user_id: int, text: str, *, chat_id: int | None = None
+    ) -> None:
         try:
-            await self._client.send_message_to_user(user_id, text, format_="html")
+            if chat_id is not None:
+                await self._client.send_message(text, chat_id=chat_id, format_="html")
+            else:
+                await self._client.send_message_to_user(user_id, text, format_="html")
         except Exception as e:
             self._map_exception(e)
 
     async def send_photo_user(
-        self, user_id: int, photo_path: Path, caption: str
+        self,
+        user_id: int,
+        photo_path: Path,
+        caption: str,
+        *,
+        chat_id: int | None = None,
     ) -> None:
         cap = caption if len(caption) <= 1024 else (caption[:1021] + "…")
         try:
             attach = await self._client.upload_file_as_attachment(
                 "image", photo_path, post_upload_delay_sec=0.35
             )
-            await self._client.send_message_to_user(
-                user_id,
-                cap,
-                format_="html",
-                attachments=[attach],
-            )
+            if chat_id is not None:
+                await self._client.send_message(
+                    cap, chat_id=chat_id, format_="html", attachments=[attach]
+                )
+            else:
+                await self._client.send_message_to_user(
+                    user_id,
+                    cap,
+                    format_="html",
+                    attachments=[attach],
+                )
         except Exception as e:
             self._map_exception(e)
 
@@ -117,6 +153,7 @@ class MaxBroadcastAdapter:
         rel_image_path: str,
         caption: str,
         reply_markup: InlineKeyboardMarkup,
+        chat_id: int | None = None,
     ) -> None:
         from app.max_platform.telegram_markup import markup_to_max_attachments
 
@@ -131,12 +168,20 @@ class MaxBroadcastAdapter:
                     "image", img, post_upload_delay_sec=0.35
                 )
                 attachments = [file_att] + (attachments or [])
-            await self._client.send_message_to_user(
-                user_id,
-                cap,
-                format_="html",
-                attachments=attachments or None,
-            )
+            if chat_id is not None:
+                await self._client.send_message(
+                    cap,
+                    chat_id=chat_id,
+                    format_="html",
+                    attachments=attachments or None,
+                )
+            else:
+                await self._client.send_message_to_user(
+                    user_id,
+                    cap,
+                    format_="html",
+                    attachments=attachments or None,
+                )
         except Exception as e:
             self._map_exception(e)
 

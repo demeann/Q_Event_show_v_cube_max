@@ -68,6 +68,29 @@ class MaxPlatformClient:
         r.raise_for_status()
         return r.json()
 
+    async def send_message(
+        self,
+        text: str,
+        *,
+        user_id: int | None = None,
+        chat_id: int | None = None,
+        format_: str = "html",
+        attachments: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """POST /messages — ровно один из ``user_id`` или ``chat_id`` (см. доки MAX)."""
+        if (user_id is None) == (chat_id is None):
+            raise ValueError("need exactly one of user_id, chat_id")
+        c = await self._get_client()
+        body: dict[str, Any] = {"text": text, "format": format_}
+        if attachments:
+            body["attachments"] = attachments
+        params = (
+            {"user_id": user_id} if user_id is not None else {"chat_id": chat_id}
+        )
+        r = await c.post("/messages", params=params, json=body)
+        r.raise_for_status()
+        return r.json()
+
     async def send_message_to_user(
         self,
         user_id: int,
@@ -76,14 +99,13 @@ class MaxPlatformClient:
         format_: str = "html",
         attachments: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
-        """POST /messages?user_id=… — см. https://dev.max.ru/docs-api/methods/POST/messages"""
-        c = await self._get_client()
-        body: dict[str, Any] = {"text": text, "format": format_}
-        if attachments:
-            body["attachments"] = attachments
-        r = await c.post("/messages", params={"user_id": user_id}, json=body)
-        r.raise_for_status()
-        return r.json()
+        """POST /messages?user_id=…"""
+        return await self.send_message(
+            text,
+            user_id=user_id,
+            format_=format_,
+            attachments=attachments,
+        )
 
     async def post_answers(
         self,

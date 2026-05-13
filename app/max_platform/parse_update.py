@@ -38,8 +38,29 @@ def parse_message_created(update: dict[str, Any]) -> tuple[int, str | None, str 
     return uid, uname, text
 
 
-def parse_bot_started(update: dict[str, Any]) -> tuple[int, str | None, str] | None:
-    """Старт диалога: ``(user_id, username, start_payload)``."""
+def chat_id_from_update(update: dict[str, Any]) -> int | None:
+    """``chat_id`` из события (нужен для ``POST /messages`` в ЛС MAX)."""
+    raw = update.get("chat_id")
+    if raw is not None:
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            pass
+    msg = update.get("message")
+    if isinstance(msg, dict):
+        rec = msg.get("recipient")
+        if isinstance(rec, dict) and rec.get("chat_id") is not None:
+            try:
+                return int(rec["chat_id"])
+            except (TypeError, ValueError):
+                pass
+    return None
+
+
+def parse_bot_started(
+    update: dict[str, Any],
+) -> tuple[int, str | None, str, int | None] | None:
+    """Старт диалога: ``(user_id, username, start_payload, chat_id)``."""
     user = update.get("user") or update.get("sender") or {}
     uid = max_user_id_from_sender(user)
     if uid is None:
@@ -55,7 +76,7 @@ def parse_bot_started(update: dict[str, Any]) -> tuple[int, str | None, str] | N
     )
     if not isinstance(payload, str):
         payload = str(payload)
-    return uid, uname, payload.strip()
+    return uid, uname, payload.strip(), chat_id_from_update(update)
 
 
 def parse_message_callback(

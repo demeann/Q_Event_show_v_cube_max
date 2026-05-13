@@ -29,12 +29,15 @@ class MaxUiMessage:
         user_id: int,
         username: str | None,
         text: str | None = None,
+        chat_id: int | None = None,
     ) -> None:
         self._client = client
         self._uid = user_id
+        #: Если задан (из ``Update.chat_id``), исходящие сообщения идут в ``POST /messages?chat_id=``.
+        self._chat_id = chat_id
         self.from_user = SimpleNamespace(id=user_id, username=username)
         self.text = text
-        self.chat = SimpleNamespace(id=user_id)
+        self.chat = SimpleNamespace(id=chat_id if chat_id is not None else user_id)
 
     async def answer(
         self,
@@ -48,12 +51,20 @@ class MaxUiMessage:
             "html" if parse_mode and str(parse_mode).upper() == "HTML" else "html"
         )
         att = markup_to_max_attachments(reply_markup)
-        await self._client.send_message_to_user(
-            self._uid,
-            text,
-            format_=fmt,
-            attachments=att or None,
-        )
+        if self._chat_id is not None:
+            await self._client.send_message(
+                text,
+                chat_id=self._chat_id,
+                format_=fmt,
+                attachments=att or None,
+            )
+        else:
+            await self._client.send_message_to_user(
+                self._uid,
+                text,
+                format_=fmt,
+                attachments=att or None,
+            )
 
     async def answer_photo(
         self,
@@ -77,12 +88,20 @@ class MaxUiMessage:
                 "image", path, post_upload_delay_sec=0.35
             )
             att = [img_att] + markup_to_max_attachments(reply_markup)
-            await self._client.send_message_to_user(
-                self._uid,
-                caption,
-                format_="html",
-                attachments=att,
-            )
+            if self._chat_id is not None:
+                await self._client.send_message(
+                    caption,
+                    chat_id=self._chat_id,
+                    format_="html",
+                    attachments=att,
+                )
+            else:
+                await self._client.send_message_to_user(
+                    self._uid,
+                    caption,
+                    format_="html",
+                    attachments=att,
+                )
         finally:
             if cleanup is not None:
                 cleanup.unlink(missing_ok=True)
@@ -118,12 +137,20 @@ class MaxUiMessage:
                 "file", path, post_upload_delay_sec=0.35
             )
             cap = caption or " "
-            await self._client.send_message_to_user(
-                self._uid,
-                cap,
-                format_="html",
-                attachments=[file_att],
-            )
+            if self._chat_id is not None:
+                await self._client.send_message(
+                    cap,
+                    chat_id=self._chat_id,
+                    format_="html",
+                    attachments=[file_att],
+                )
+            else:
+                await self._client.send_message_to_user(
+                    self._uid,
+                    cap,
+                    format_="html",
+                    attachments=[file_att],
+                )
         finally:
             if tmp_path:
                 path.unlink(missing_ok=True)

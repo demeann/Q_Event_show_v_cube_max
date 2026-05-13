@@ -22,6 +22,8 @@ class User(IntPkMixin, TimestampMixin, Base):
     telegram_user_id: Mapped[int] = mapped_column(
         BigInteger, unique=True, nullable=False, index=True
     )
+    #: Для MESSENGER_PLATFORM=max: id диалога из Update.chat_id; иначе None.
+    max_chat_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     tg_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)

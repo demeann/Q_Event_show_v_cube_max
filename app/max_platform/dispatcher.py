@@ -51,6 +51,7 @@ from app.max_platform.access_gate import max_access_gate
 from app.max_platform.client import MaxPlatformClient
 from app.max_platform.fsm_memory import max_fsm_clear, max_fsm_raw, max_fsm_set
 from app.max_platform.parse_update import (
+    chat_id_from_update,
     max_user_id_from_sender,
     parse_bot_started,
     parse_message_callback,
@@ -101,23 +102,34 @@ class MaxUpdateDispatcher:
             parsed = parse_bot_started(u)
             if parsed is None:
                 return
-            uid, uname, payload = parsed
-            await self._do_start(uid, uname, payload)
+            uid, uname, payload, max_chat_id = parsed
+            await self._do_start(uid, uname, payload, platform_chat_id=max_chat_id)
             return
         if ut == "message_created":
             parsed = parse_message_created(u)
             if parsed is None:
                 return
             uid, uname, text = parsed
-            await self._handle_incoming_message(uid, uname, text)
+            await self._handle_incoming_message(
+                uid, uname, text, platform_chat_id=chat_id_from_update(u)
+            )
             return
         if ut == "message_callback":
             await self._handle_callback_raw(u)
             return
 
-    async def _do_start(self, uid: int, uname: str | None, start_payload: str) -> None:
+    async def _do_start(
+        self,
+        uid: int,
+        uname: str | None,
+        start_payload: str,
+        *,
+        platform_chat_id: int | None,
+    ) -> None:
         settings = get_settings()
-        msg = MaxUiMessage(self._c, user_id=uid, username=uname, text=None)
+        msg = MaxUiMessage(
+            self._c, user_id=uid, username=uname, text=None, chat_id=platform_chat_id
+        )
 
         async def reply_html(t: str) -> None:
             await msg.answer(t, parse_mode="HTML")
@@ -138,13 +150,25 @@ class MaxUpdateDispatcher:
                 reply_html=reply_html,
                 state_clear=state_clear,
                 state_set_waiting_email=state_set_waiting_email,
+                platform_chat_id=platform_chat_id,
             )
 
     async def _handle_incoming_message(
-        self, uid: int, uname: str | None, text: str | None
+        self,
+        uid: int,
+        uname: str | None,
+        text: str | None,
+        *,
+        platform_chat_id: int | None,
     ) -> None:
         settings = get_settings()
-        msg = MaxUiMessage(self._c, user_id=uid, username=uname, text=text)
+        msg = MaxUiMessage(
+            self._c,
+            user_id=uid,
+            username=uname,
+            text=text,
+            chat_id=platform_chat_id,
+        )
         fsm_state = max_fsm_raw(uid)
 
         async def reply_html(t: str) -> None:
@@ -179,6 +203,7 @@ class MaxUpdateDispatcher:
                         reply_html=reply_html,
                         state_clear=_clear,
                         after_email_verified=_after_verified,
+                        platform_chat_id=platform_chat_id,
                     )
             else:
                 await handle_need_text_only_email(reply_html)
@@ -186,7 +211,7 @@ class MaxUpdateDispatcher:
 
         cmd, rest = _cmd_and_args(text)
         if cmd == "/start":
-            await self._do_start(uid, uname, rest)
+            await self._do_start(uid, uname, rest, platform_chat_id=platform_chat_id)
             return
         if cmd == "/play":
             await cmd_play(msg)
@@ -229,7 +254,10 @@ class MaxUpdateDispatcher:
         if uname is not None:
             uname = str(uname)
         fsm_state = max_fsm_raw(uid)
-        base_msg = MaxUiMessage(self._c, user_id=uid, username=uname)
+        max_chat_id = chat_id_from_update(u)
+        base_msg = MaxUiMessage(
+            self._c, user_id=uid, username=uname, chat_id=max_chat_id
+        )
         cbq = MaxUiCallbackQuery(
             self._c,
             user_id=uid,

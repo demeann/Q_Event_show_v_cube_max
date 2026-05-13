@@ -99,17 +99,23 @@ def _within_tour_push_window(round_row: Round, now_naive: datetime) -> bool:
 async def _send_one_push(
     messenger: BroadcastAdapter,
     *,
-    platform_user_id: int,
+    user: User,
     code: RoundCode,
 ) -> bool:
     """``True`` если не нужно ретраить (успех или чат недоступен)."""
+    from app.core.config import get_settings
+
     caption, image, markup = _push_meta(code)
+    settings = get_settings()
+    max_chat = user.max_chat_id if settings.messenger_platform == "max" else None
+    platform_user_id = int(user.telegram_user_id)
     try:
         await messenger.send_tour_intro_with_keyboard(
             platform_user_id,
             rel_image_path=image,
             caption=caption,
             reply_markup=markup,
+            chat_id=max_chat,
         )
         return True
     except MessengerForbiddenError:
@@ -152,11 +158,7 @@ async def try_send_tour_push_for_user(
     )
     if already_in_round:
         return
-    ok = await _send_one_push(
-        messenger,
-        platform_user_id=int(user.telegram_user_id),
-        code=round_row.code,
-    )
+    ok = await _send_one_push(messenger, user=user, code=round_row.code)
     if ok:
         setattr(user, col.key, now_naive)
         await session.flush()
@@ -211,11 +213,7 @@ async def process_due_tour_start_pushes(messenger: BroadcastAdapter) -> None:
             )
             users = list(q.scalars().all())
             for user in users:
-                ok = await _send_one_push(
-                    messenger,
-                    platform_user_id=int(user.telegram_user_id),
-                    code=rnd.code,
-                )
+                ok = await _send_one_push(messenger, user=user, code=rnd.code)
                 if ok:
                     setattr(user, col.key, now_naive)
                     await session.flush()
