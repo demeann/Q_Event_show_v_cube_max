@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import Any
 
 import httpx
 
 DEFAULT_BASE = "https://platform-api.max.ru"
+
+log = logging.getLogger(__name__)
 
 
 class MaxPlatformClient:
@@ -88,7 +91,21 @@ class MaxPlatformClient:
             {"user_id": user_id} if user_id is not None else {"chat_id": chat_id}
         )
         r = await c.post("/messages", params=params, json=body)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            detail = ""
+            try:
+                detail = e.response.text[:800]
+            except Exception:
+                pass
+            log.warning(
+                "MAX POST /messages failed status=%s params=%s detail=%s",
+                e.response.status_code,
+                params,
+                detail or str(e),
+            )
+            raise
         return r.json()
 
     async def send_message_to_user(

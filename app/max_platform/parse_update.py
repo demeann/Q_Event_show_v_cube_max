@@ -38,6 +38,15 @@ def parse_message_created(update: dict[str, Any]) -> tuple[int, str | None, str 
     return uid, uname, text
 
 
+def message_sender_is_bot(update: dict[str, Any]) -> bool:
+    """Собственные сообщения бота в ``message_created`` — не обрабатывать (иначе шум/петли)."""
+    msg = update.get("message")
+    if not isinstance(msg, dict):
+        return False
+    sender = msg.get("sender") or {}
+    return bool(sender.get("is_bot"))
+
+
 def chat_id_from_update(update: dict[str, Any]) -> int | None:
     """``chat_id`` из события (нужен для ``POST /messages`` в ЛС MAX)."""
     raw = update.get("chat_id")
@@ -54,6 +63,14 @@ def chat_id_from_update(update: dict[str, Any]) -> int | None:
                 return int(rec["chat_id"])
             except (TypeError, ValueError):
                 pass
+        # редкий fallback: только id диалога
+        for key in ("chat_id", "id"):
+            raw = msg.get(key)
+            if raw is not None:
+                try:
+                    return int(raw)
+                except (TypeError, ValueError):
+                    pass
     return None
 
 

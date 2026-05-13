@@ -53,6 +53,7 @@ from app.max_platform.fsm_memory import max_fsm_clear, max_fsm_raw, max_fsm_set
 from app.max_platform.parse_update import (
     chat_id_from_update,
     max_user_id_from_sender,
+    message_sender_is_bot,
     parse_bot_started,
     parse_message_callback,
     parse_message_created,
@@ -106,6 +107,8 @@ class MaxUpdateDispatcher:
             await self._do_start(uid, uname, payload, platform_chat_id=max_chat_id)
             return
         if ut == "message_created":
+            if message_sender_is_bot(u):
+                return
             parsed = parse_message_created(u)
             if parsed is None:
                 return

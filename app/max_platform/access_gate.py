@@ -62,5 +62,8 @@ async def max_access_gate(
         await reply_html(msg)
     elif reply_callback_alert is not None:
         await reply_callback_alert("Сначала пройди регистрацию: /start")
+    else:
+        # фото/стикер без текста — всё равно подсказать
+        await reply_html(msg)
     log.debug("max_access_denied uid=%s state=%s", user_id, fsm_raw_state)
     return False
