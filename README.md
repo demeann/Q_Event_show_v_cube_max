@@ -30,17 +30,25 @@
 
 ## Быстрый тест API (long polling)
 
+**Только сырые события** — бот **не отвечает** в чат. Подходит, чтобы увидеть JSON update.
+
 ```bash
 cd MAX_Q_Event
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env   # заполни MAX_ACCESS_TOKEN
+cp .env.example .env   # заполни MAX_ACCESS_TOKEN, MESSENGER_PLATFORM=max
 PYTHONPATH=. python -m app.max_platform.poll_updates
 ```
 
-Команда делает long poll и печатает сырые `update_type` (разработка событий перед подключением обработчиков).
+## Запуск бота MAX (ответы пользователям)
 
-## Дальше
+В `.env`: `MESSENGER_PLATFORM=max`, `RUN_MODE=polling`, токен и БД. Затем:
+
+```bash
+PYTHONPATH=. python -m app.bot.main
+```
+
+Один процесс: long poll `GET /updates`, маршрутизация в `MaxUpdateDispatcher`, исходящие `POST /messages`.
 
 Подробный чеклист переноса хендлеров и отличий MAX от Telegram — в **`docs/MAX_PORTING.md`**.
 

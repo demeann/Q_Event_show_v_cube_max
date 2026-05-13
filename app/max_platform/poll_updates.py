@@ -16,6 +16,11 @@ log = logging.getLogger(__name__)
 
 async def _main() -> None:
     settings = get_settings()
+    log.warning(
+        "Режим ОТЛАДКИ: только печать сырых update, без обработчиков и без POST /messages. "
+        "Чтобы бот отвечал пользователям, запусти: PYTHONPATH=. python -m app.bot.main "
+        "(в .env: MESSENGER_PLATFORM=max)."
+    )
     token = settings.api_access_token
     if not token or len(token.strip()) < 10:
         log.error("Нет MAX_ACCESS_TOKEN (или legacy BOT_TOKEN) в .env")
