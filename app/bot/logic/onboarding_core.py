@@ -43,8 +43,6 @@ _EMAIL_ACCEPTED = (
 )
 
 _WELCOME_BACK = (
-    "С возвращением! Ты уже в игре с email <b>{email}</b>.\n\n"
-    "Туры «Конкурса в кубе» доступны через /play — следи за датами старта в Q CLUB.\n\n"
     "О старте следующего тура, мы пришлём уведомление."
 )
 
@@ -57,10 +55,7 @@ _INVITE_REQUIRED_TELEGRAM = (
 
 _INVITE_REQUIRED_MAX = (
     "Бот доступен только по пригласительной ссылке.\n\n"
-    "Открой ссылку из письма или сообщения от организаторов в MAX. Она должна "
-    "выглядеть так: "
-    "<code>https://max.ru/id500404603022_2_bot?start=секретный_код</code> "
-    "— в конце после <code>start=</code> должен быть тот же код, что в рассылке.\n\n"
+    "Открой ссылку из письма или сообщения от организаторов в MAX.\n\n"
     "Нажми «Запустить бота» в приложении MAX."
 )
 
@@ -90,7 +85,6 @@ async def handle_start(
         if user.is_blocked:
             await reply_html(
                 "Доступ для этого аккаунта ограничен. "
-                "Если кажется, что это ошибка — напиши в поддержку Q CLUB."
             )
             await state_clear()
             return
@@ -107,8 +101,7 @@ async def handle_start(
 
     if user.is_blocked:
         await reply_html(
-            "Доступ для этого аккаунта ограничен. "
-            "Если кажется, что это ошибка — напиши в поддержку Q CLUB."
+            "Доступ для этого аккаунта ограничен."
         )
         await state_clear()
         return
@@ -121,7 +114,7 @@ async def handle_start(
     if settings.invite_only and not settings.invite_start_tokens:
         log.error("INVITE_ONLY=true, но INVITE_START_TOKENS пуст — закройте дыру в конфиге.")
         await reply_html(
-            "Регистрация через бота временно недоступна. Напиши в поддержку Q CLUB."
+            "Регистрация через бота временно недоступна."
         )
         await state_clear()
         return
