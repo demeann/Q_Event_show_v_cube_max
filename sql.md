@@ -53,7 +53,7 @@ mysql -u qclub_bot -p -h 127.0.0.1 ИМЯ_БАЗЫ
 Ошибка: `Unknown column 'users.max_chat_id' in 'field list'`. Предпочтительно: из каталога проекта `PYTHONPATH=. alembic upgrade head`. Или один раз вручную:
 
 ```sql
-USE ИМЯ_БАЗЫ;
+USE u3412349_default;
 ALTER TABLE users ADD COLUMN max_chat_id BIGINT NULL
   COMMENT 'MAX: chat_id диалога для POST /messages'
   AFTER telegram_user_id;

@@ -96,6 +96,21 @@ def _within_tour_push_window(round_row: Round, now_naive: datetime) -> bool:
     return round_row.starts_at <= now_naive <= round_row.ends_at
 
 
+def _allows_tour_push_now(
+    round_row: Round, now_naive: datetime, *, from_post_verify: bool
+) -> bool:
+    """После верификации почты для R1 можно выслать интро до starts_at (но не после ends_at)."""
+    if _within_tour_push_window(round_row, now_naive):
+        return True
+    if (
+        from_post_verify
+        and round_row.code == RoundCode.R1
+        and now_naive <= round_row.ends_at
+    ):
+        return True
+    return False
+
+
 async def _send_one_push(
     messenger: BroadcastAdapter,
     *,
@@ -135,6 +150,7 @@ async def try_send_tour_push_for_user(
     *,
     user_id: int,
     round_row: Round,
+    from_post_verify: bool = False,
 ) -> None:
     """Отправить пуш тура, если пора и ещё не отправляли."""
     user = await session.get(User, user_id)
@@ -143,7 +159,7 @@ async def try_send_tour_push_for_user(
     if user.email_verified_at is None and not user.is_admin:
         return
     now_naive = now_utc().replace(tzinfo=None)
-    if not _within_tour_push_window(round_row, now_naive):
+    if not _allows_tour_push_now(round_row, now_naive, from_post_verify=from_post_verify):
         return
     col = _sent_column(round_row.code)
     if getattr(user, col.key) is not None:
@@ -182,7 +198,11 @@ async def deliver_pending_tour_pushes_for_user(
             return
         for rnd in rounds:
             await try_send_tour_push_for_user(
-                session, messenger, user_id=user.id, round_row=rnd
+                session,
+                messenger,
+                user_id=user.id,
+                round_row=rnd,
+                from_post_verify=True,
             )
 
 

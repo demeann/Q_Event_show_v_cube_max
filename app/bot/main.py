@@ -87,9 +87,8 @@ async def _run_polling() -> None:
         await dp.start_polling(bot)
     except TelegramNetworkError as e:
         log.error(
-            "Не удаётся достучаться до Telegram API (%s). "
-            "Проверь интернет, VPN (если api.telegram.org недоступен), "
-            "файрвол и что BOT_TOKEN верный.",
+            "Не удаётся достучаться до MAX API (%s). "
+            "Проверь интернет, может включен VPN?",
             e,
         )
         raise SystemExit(1) from None
