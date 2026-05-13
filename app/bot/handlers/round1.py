@@ -23,14 +23,11 @@ from app.services.round1_play import (
     try_answer_round1,
 )
 from app.services.round_schedule import get_playable_round_now
+from app.services.tour_start_push import TOUR_PUSH_R1_TEXT
 
 router = Router(name="round1")
 
-_R1_INTRO = (
-    "Мы начинаем! Добро пожаловать в первый тур!\n\n"
-    "Тут всё серьёзно: четыре варианта, один верный, ноль подсказок от зала.\n\n"
-    "Ну, почти ноль. Поехали?"
-)
+_R1_INTRO = TOUR_PUSH_R1_TEXT
 
 
 class R1Forward(CallbackData, prefix="r1fwd"):
@@ -145,7 +142,8 @@ async def on_r1_forward(query: CallbackQuery, callback_data: R1Forward) -> None:
             )
         )
         prog = pr.scalar_one_or_none()
-        if prog is None or prog.status != RoundProgressStatus.NOT_STARTED:
+        # Только с пуша «Вперёд» без /play — прогресса ещё нет.
+        if prog is not None and prog.status != RoundProgressStatus.NOT_STARTED:
             await query.answer("Первый вопрос уже открыт выше.", show_alert=True)
             return
 
@@ -223,7 +221,7 @@ async def on_r1_pick(query: CallbackQuery, callback_data: R1Pick) -> None:
                 "Мы объявим результаты в письме, которое пришлём на указанную почту "
                 "<b>25.05</b>.\n\n"
                 "А пока принимай участие в следующем туре — он стартует <b>18.05</b>, "
-                "мы пришлём напоминание!"
+                "мы пришлём напоминание!📆"
             )
             return
 

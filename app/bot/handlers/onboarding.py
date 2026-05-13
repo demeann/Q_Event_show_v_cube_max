@@ -16,6 +16,8 @@ from app.bot.logic.onboarding_core import (
 from app.bot.states import OnboardingStates
 from app.core.config import get_settings
 from app.db.base import get_session
+from app.messaging.broadcast_adapter import TelegramBroadcastAdapter
+from app.services.tour_start_push import deliver_pending_tour_pushes_for_user
 
 router = Router(name="onboarding")
 
@@ -56,6 +58,14 @@ async def process_email(message: Message, state: FSMContext) -> None:
     async def reply_html(text: str) -> None:
         await message.answer(text, parse_mode="HTML")
 
+    async def after_verified() -> None:
+        if message.bot is None or message.from_user is None:
+            return
+        await deliver_pending_tour_pushes_for_user(
+            TelegramBroadcastAdapter(message.bot),
+            platform_user_id=message.from_user.id,
+        )
+
     async with get_session() as session:
         await handle_waiting_email_text(
             session,
@@ -65,6 +75,7 @@ async def process_email(message: Message, state: FSMContext) -> None:
             raw_email_text=raw,
             reply_html=reply_html,
             state_clear=state.clear,
+            after_email_verified=after_verified,
         )
 
 

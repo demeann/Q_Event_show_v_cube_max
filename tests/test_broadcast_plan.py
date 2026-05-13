@@ -1,64 +1,39 @@
-"""Тесты планирования рассылок (слоты по турам)."""
+"""Стартовые пуши туров (константы и callback-строки)."""
 
 from __future__ import annotations
 
-from datetime import datetime
-
-from app.db.models.round import RoundCode, RoundStatus
-from app.services.broadcast_plan import slots_for_round
-
-
-def test_slots_for_round_four_entries():
-    from app.db.models.round import Round
-
-    r = Round(
-        code=RoundCode.R1,
-        name="T",
-        starts_at=datetime(2026, 5, 1, 21, 0, 0),
-        ends_at=datetime(2026, 5, 4, 20, 59, 59),
-        status=RoundStatus.SCHEDULED,
-    )
-    slots = slots_for_round(r)
-    assert len(slots) == 4
-    codes = [s.template_code for s in slots]
-    assert codes[0] == "ANNOUNCE_R1"
-    assert "REMINDER_R1_NOT_STARTED" in codes
-    assert "REMINDER_R1_NOT_FINISHED" in codes
-    assert codes[-1] == "RESULT_R1"
+from app.db.models.round import RoundCode
+from app.services.tour_start_push import (
+    CB_R1_GO,
+    CB_R2_GO,
+    CB_R3_GO,
+    TOUR_PUSH_R1_TEXT,
+    _kb_r1,
+    _kb_r2,
+    _kb_r3,
+    _push_meta,
+)
 
 
-def test_result_r3_uses_all_rounds_finished_segment():
-    from app.db.models.round import Round
+def test_callback_payloads_match_aiogram_pack():
+    from app.bot.handlers.round1 import R1Forward
+    from app.bot.handlers.round2 import R2Go
+    from app.bot.handlers.round3 import R3Go
 
-    r = Round(
-        code=RoundCode.R3,
-        name="T3",
-        starts_at=datetime(2026, 5, 20, 21, 0, 0),
-        ends_at=datetime(2026, 5, 22, 20, 59, 59),
-        status=RoundStatus.SCHEDULED,
-    )
-    slots = slots_for_round(r)
-    assert slots[-1].template_code == "RESULT_R3"
-    assert slots[-1].segment_code == "ALL_ROUNDS_FINISHED"
+    assert R1Forward().pack() == CB_R1_GO
+    assert R2Go().pack() == CB_R2_GO
+    assert R3Go().pack() == CB_R3_GO
 
 
-def test_result_r1_uses_all_verified_segment():
-    from app.db.models.round import Round
+def test_push_meta_covers_all_rounds():
+    for code in (RoundCode.R1, RoundCode.R2, RoundCode.R3):
+        text, path, kb = _push_meta(code)
+        assert text
+        assert path.startswith("assets/")
+        assert kb.inline_keyboard
 
-    r = Round(
-        code=RoundCode.R1,
-        name="T",
-        starts_at=datetime(2026, 5, 1, 21, 0, 0),
-        ends_at=datetime(2026, 5, 4, 20, 59, 59),
-        status=RoundStatus.SCHEDULED,
-    )
-    slots = slots_for_round(r)
-    assert slots[-1].segment_code == "ALL_VERIFIED"
+    assert _kb_r1().inline_keyboard[0][0].text == "Вперёд"
+    assert _kb_r2().inline_keyboard[0][0].text == "Начинаем"
+    assert _kb_r3().inline_keyboard[0][0].text == "Поехали"
 
-
-def test_parse_segment_round_code():
-    from app.services.broadcast_segments import parse_round_code_from_segment
-
-    assert parse_round_code_from_segment("ALL_VERIFIED") is None
-    assert parse_round_code_from_segment("ALL_ROUNDS_FINISHED") is None
-    assert parse_round_code_from_segment("R2_NOT_STARTED").value == "R2"
+    assert "Поехали?👀" in TOUR_PUSH_R1_TEXT

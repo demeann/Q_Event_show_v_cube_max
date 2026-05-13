@@ -57,6 +57,8 @@ from app.max_platform.parse_update import (
     parse_message_created,
 )
 from app.max_platform.shim import MaxUiCallbackQuery, MaxUiMessage
+from app.messaging.broadcast_adapter import MaxBroadcastAdapter
+from app.services.tour_start_push import deliver_pending_tour_pushes_for_user
 
 log = logging.getLogger(__name__)
 
@@ -162,6 +164,12 @@ class MaxUpdateDispatcher:
                     async def _clear() -> None:
                         max_fsm_clear(uid)
 
+                    async def _after_verified() -> None:
+                        msgr = MaxBroadcastAdapter(self._c)
+                        await deliver_pending_tour_pushes_for_user(
+                            msgr, platform_user_id=uid
+                        )
+
                     await handle_waiting_email_text(
                         session,
                         settings,
@@ -170,6 +178,7 @@ class MaxUpdateDispatcher:
                         raw_email_text=text,
                         reply_html=reply_html,
                         state_clear=_clear,
+                        after_email_verified=_after_verified,
                     )
             else:
                 await handle_need_text_only_email(reply_html)

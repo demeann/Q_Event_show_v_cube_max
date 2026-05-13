@@ -26,24 +26,25 @@ _WELCOME_NEW = (
 )
 
 _EMAIL_ACCEPTED = (
-    'Добро пожаловать в "Конкурс в кубе"!\n\n'
+    'Добро пожаловать в "Конкурс в кубе"!🧡\n\n'
     "Ты можешь вспомнить лучшие моменты яркой трёхлетней истории программы лояльности "
     "Q CLUB — и получить шанс выиграть классный приз!\n\n"
-    "Тебя ждут три тура: <b>14.05</b>, <b>18.05</b> и <b>20.05</b>. Мы пришлём напоминания, "
+    "📆Тебя ждут три тура: <b>14.05</b>, <b>18.05</b> и <b>20.05</b>. Мы пришлём напоминания, "
     "чтобы ты не пропустил начало.\n\n"
     "Участвуй в каждом туре и зарабатывай баллы. Удачи!"
 )
 
 _WELCOME_BACK = (
     "С возвращением! Ты уже в игре с email <b>{email}</b>.\n\n"
-    "Туры «Конкурса в кубе» доступны через /play — следи за датами старта в Q CLUB."
+    "Туры «Конкурса в кубе» доступны через /play — следи за датами старта в Q CLUB.\n\n"
+    "О старте следующего тура, мы пришлём уведомление."
 )
 
 _INVITE_REQUIRED = (
     "Бот доступен только по пригласительной ссылке.\n\n"
-    "Открой ссылку из письма или сообщения от организаторов (параметр "
-    "<code>start</code> в ссылке на бота). "
-    "Если ссылка есть, открой её ещё раз и запусти бота снова."
+    "Открой ссылку из письма или сообщения от организаторов (формат: "
+    "<code>t.me/...</code> с параметром <code>start</code>). "
+    "Если ссылка есть, нажми её ещё раз и затем «Запустить» / Start."
 )
 
 
@@ -120,6 +121,7 @@ async def handle_waiting_email_text(
     raw_email_text: str,
     reply_html: Callable[[str], Awaitable[None]],
     state_clear: Callable[[], Awaitable[None]],
+    after_email_verified: Callable[[], Awaitable[None]] | None = None,
 ) -> None:
     result = check_corporate_email(raw_email_text, settings.allowed_email_domains)
 
@@ -166,6 +168,8 @@ async def handle_waiting_email_text(
 
     await state_clear()
     await reply_html(_EMAIL_ACCEPTED)
+    if after_email_verified is not None:
+        await after_email_verified()
 
 
 async def handle_need_text_only_email(

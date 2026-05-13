@@ -25,17 +25,13 @@ from app.services.round1_play import (
     try_answer_round1,
 )
 from app.services.round_schedule import get_playable_round_now
+from app.services.tour_start_push import TOUR_PUSH_R3_TEXT
 
 log = logging.getLogger(__name__)
 
 router = Router(name="round3")
 
-_R3_INTRO = (
-    "Привет! Скучал? А вот и мы! Встречай финальный тур нашего Конкурса в Кубе!\n\n"
-    "Смотри на картинки, включай ассоциации и выбирай ответ.\n\n"
-    "<tg-spoiler><i>Подсказка: Q CLUB рядом, но не всё так очевидно. Баллы не отнимаются — "
-    "мы добрые до конца.</i></tg-spoiler>"
-)
+_R3_INTRO = TOUR_PUSH_R3_TEXT
 
 
 class R3Go(CallbackData, prefix="r3go"):
@@ -175,7 +171,7 @@ async def on_r3_go(query: CallbackQuery, callback_data: R3Go) -> None:
             )
         )
         prog = pr.scalar_one_or_none()
-        if prog is None or prog.status != RoundProgressStatus.NOT_STARTED:
+        if prog is not None and prog.status != RoundProgressStatus.NOT_STARTED:
             await query.answer("Первый вопрос уже открыт выше.", show_alert=True)
             return
 

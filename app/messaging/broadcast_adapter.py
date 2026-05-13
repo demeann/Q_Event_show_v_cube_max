@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
-from aiogram.types import FSInputFile
+from aiogram.types import FSInputFile, InlineKeyboardMarkup
 
+from app.bot.intro_media import send_intro_push_to_user
 from app.messaging.errors import MessengerBadRequestError, MessengerForbiddenError
 
 if TYPE_CHECKING:
@@ -22,6 +23,14 @@ class BroadcastAdapter(Protocol):
     async def send_text_user(self, user_id: int, text: str) -> None: ...
     async def send_photo_user(
         self, user_id: int, photo_path: Path, caption: str
+    ) -> None: ...
+    async def send_tour_intro_with_keyboard(
+        self,
+        user_id: int,
+        *,
+        rel_image_path: str,
+        caption: str,
+        reply_markup: InlineKeyboardMarkup,
     ) -> None: ...
 
 
@@ -52,6 +61,27 @@ class TelegramBroadcastAdapter:
         except TelegramBadRequest as e:
             raise MessengerBadRequestError(str(e)) from e
 
+    async def send_tour_intro_with_keyboard(
+        self,
+        user_id: int,
+        *,
+        rel_image_path: str,
+        caption: str,
+        reply_markup: InlineKeyboardMarkup,
+    ) -> None:
+        try:
+            await send_intro_push_to_user(
+                self._bot,
+                chat_id=user_id,
+                rel_image_path=rel_image_path,
+                caption=caption,
+                reply_markup=reply_markup,
+            )
+        except TelegramForbiddenError as e:
+            raise MessengerForbiddenError(str(e)) from e
+        except TelegramBadRequest as e:
+            raise MessengerBadRequestError(str(e)) from e
+
 
 class MaxBroadcastAdapter:
     def __init__(self, client: MaxPlatformClient) -> None:
@@ -76,6 +106,36 @@ class MaxBroadcastAdapter:
                 cap,
                 format_="html",
                 attachments=[attach],
+            )
+        except Exception as e:
+            self._map_exception(e)
+
+    async def send_tour_intro_with_keyboard(
+        self,
+        user_id: int,
+        *,
+        rel_image_path: str,
+        caption: str,
+        reply_markup: InlineKeyboardMarkup,
+    ) -> None:
+        from app.max_platform.telegram_markup import markup_to_max_attachments
+
+        from app.bot.intro_media import _resolve_media_path
+
+        cap = caption if len(caption) <= 1024 else (caption[:1021] + "…")
+        try:
+            attachments = markup_to_max_attachments(reply_markup)
+            img = _resolve_media_path(rel_image_path)
+            if img is not None:
+                file_att = await self._client.upload_file_as_attachment(
+                    "image", img, post_upload_delay_sec=0.35
+                )
+                attachments = [file_att] + (attachments or [])
+            await self._client.send_message_to_user(
+                user_id,
+                cap,
+                format_="html",
+                attachments=attachments or None,
             )
         except Exception as e:
             self._map_exception(e)

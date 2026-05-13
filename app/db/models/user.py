@@ -37,6 +37,16 @@ class User(IntPkMixin, TimestampMixin, Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
     is_blocked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
 
+    tour_push_r1_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False), nullable=True
+    )
+    tour_push_r2_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False), nullable=True
+    )
+    tour_push_r3_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False), nullable=True
+    )
+
     def __repr__(self) -> str:  # pragma: no cover
         return (
             f"<User id={self.id} tg={self.telegram_user_id} "

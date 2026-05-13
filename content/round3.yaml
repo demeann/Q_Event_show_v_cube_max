@@ -14,8 +14,8 @@ questions:
         - "Стики HEETS, Fiit, MIIX"
         - "Палочки для чистки IQOS и lil SOLID"
       correct_index: 0
-      feedback_correct: "Ты угадал и получаешь баллы! Наши Стики - это целая линейка вкусов: от классики до ярких ароматических нот."
-      feedback_wrong: "К сожалению - нет. Правильный ответ - стики HEETS, Fiit, MIIX. Но ничего, впереди ещё вопросы - не расстраивайся!"
+      feedback_correct: "Ты угадал и получаешь баллы!🎉\n\nНаши Стики - это целая линейка вкусов: от классики до ярких ароматических нот."
+      feedback_wrong: "К сожалению - нет. Правильный ответ - стики HEETS, Fiit, MIIX.\n\nНо ничего, впереди ещё вопросы - не расстраивайся!🧡"
       image_path: "assets/round3/q1.jpg"
   - code: R3Q2
     order_index: 2
@@ -27,8 +27,8 @@ questions:
         - "Персонализация чехла"
         - "Панель для IQOS и lil SOLID"
       correct_index: 1
-      feedback_correct: "Так и есть! Ты получаешь баллы и можешь открыть новую картинку!"
-      feedback_wrong: "Упс, не совсем! Правильный ответ - сменная панель для IQOS."
+      feedback_correct: "Так и есть! Ты получаешь баллы и можешь открыть новую картинку!🎉"
+      feedback_wrong: "Упс, не совсем!🤍\n\nПравильный ответ - сменная панель для IQOS."
       image_path: "assets/round3/q2.jpg"
   - code: R3Q3
     order_index: 3
@@ -40,6 +40,6 @@ questions:
         - "Набор аксессуаров"
         - "Блок стиков HEETS, Fiit, MIIX"
       correct_index: 1
-      feedback_correct: "Абсолютно точно! Блок - 10 пачек любимого вкуса. Ты получаешь баллы!"
-      feedback_wrong: "Увы, но нет. Правильный ответ - блок стиков HEETS, Fiit, MIIX."
+      feedback_correct: "Абсолютно точно!🎉\n\nБлок - 10 пачек любимого вкуса. Ты получаешь баллы!"
+      feedback_wrong: "Увы, но нет. Правильный ответ - блок стиков HEETS, Fiit, MIIX.✨"
       image_path: "assets/round3/q3.jpg"

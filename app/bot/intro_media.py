@@ -32,6 +32,40 @@ async def answer_intro_with_optional_photo(
             photo=FSInputFile(img),
             caption=caption,
             reply_markup=reply_markup,
+            parse_mode="HTML",
         )
     else:
-        await message.answer(caption, reply_markup=reply_markup)
+        await message.answer(
+            caption, reply_markup=reply_markup, parse_mode="HTML"
+        )
+
+
+async def send_intro_push_to_user(
+    bot,
+    *,
+    chat_id: int,
+    rel_image_path: str,
+    caption: str,
+    reply_markup: InlineKeyboardMarkup,
+) -> None:
+    """Пуш участнику: как интро в /play (фото опционально)."""
+    from aiogram import Bot
+
+    if not isinstance(bot, Bot):
+        raise TypeError("Expected aiogram.Bot")
+    img = _resolve_media_path(rel_image_path)
+    if img is not None:
+        await bot.send_photo(
+            chat_id,
+            photo=FSInputFile(img),
+            caption=caption,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+        )
+    else:
+        await bot.send_message(
+            chat_id,
+            caption,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+        )

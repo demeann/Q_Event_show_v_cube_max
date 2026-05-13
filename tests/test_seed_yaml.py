@@ -61,15 +61,9 @@ def test_round3_shape():
         assert p["image_path"].startswith("assets/round3/")
 
 
-def test_broadcasts_shape():
+def test_broadcasts_yaml_deprecated_empty_templates():
     data = _load("broadcasts.yaml")
-    tpls = data["templates"]
-    codes = [t["code"] for t in tpls]
-    assert len(codes) == len(set(codes))
-    allowed = {"ANNOUNCE", "REMINDER", "RESULT", "CUSTOM"}
-    for t in tpls:
-        assert t["type"] in allowed
-        assert t["text"].strip()
+    assert data["templates"] == []
 
 
 @pytest.mark.parametrize(
