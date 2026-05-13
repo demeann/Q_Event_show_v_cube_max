@@ -60,6 +60,7 @@ from app.max_platform.parse_update import (
 )
 from app.max_platform.shim import MaxUiCallbackQuery, MaxUiMessage
 from app.messaging.broadcast_adapter import MaxBroadcastAdapter
+from app.max_platform.update_batch import ordered_updates
 from app.services.tour_start_push import deliver_pending_tour_pushes_for_user
 
 log = logging.getLogger(__name__)
@@ -87,11 +88,9 @@ class MaxUpdateDispatcher:
                 types=types,
                 timeout=45,
             )
-            updates = data.get("updates") or []
+            updates = ordered_updates(data.get("updates") or [])
             marker = data.get("marker")
             for u in updates:
-                if not isinstance(u, dict):
-                    continue
                 try:
                     await self._dispatch(u)
                 except Exception:

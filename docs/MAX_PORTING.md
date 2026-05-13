@@ -26,7 +26,7 @@
 1. **`app/bot/main.py`** — убрать aiogram `Bot`/`Dispatcher`; запуск long poll или aiohttp webhook.
 2. **Все `app/bot/handlers/*.py`** — заменить:
    - `Message` / `CallbackQuery` на тонкие типы-обёртки с `from_user.id`, `.text`, `.answer()`, `.answer_photo()` → вызовы `MaxPlatformClient`.
-   - `@router.message(CommandStart())` — разбор текста `/start` и `bot_started` (см. объект `Update`).
+   - `@router.message(CommandStart())` — разбор текста `/start` и `bot_started` (см. объект `Update`). В одной пачке `GET /updates` сначала обрабатывай `bot_started` (payload из deep link), иначе «голый» `/start` без аргументов может отработать раньше и ложно сработает инвайт-гейт.
    - `FSMContext` — свое хранилище состояний (память/Redis) по ключу `max_user_id`.
    - `CallbackData.pack()/unpack()` — оставить ту же строковую схему в `payload` кнопок `callback`.
 3. **`app/bot/middlewares/access.py`** — фильтрация событий до логики доступа.

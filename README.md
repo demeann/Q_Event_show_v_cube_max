@@ -20,6 +20,16 @@
 
 В схеме пока сохранены имена колонок `telegram_user_id` / `tg_username` — в инстансе MAX в них пишутся **ID и имя пользователя MAX** (это осознанное упрощение без миграции `→ max_user_id`). В выгрузках CSV заголовок останется `telegram_user_id`; трактуйте как «ID пользователя в мессенджере».
 
+**После обновления кода** обязательно прогоняй миграции Alembic (иначе ошибка вида `Unknown column 'users.max_chat_id'`):
+
+```bash
+cd /path/to/MAX_Q_Event    # каталог с app/, alembic.ini
+source .venv/bin/activate
+PYTHONPATH=. alembic upgrade head
+```
+
+Ручной SQL — в **`sql.md`**, раздел «MAX: колонка users.max_chat_id».
+
 ## Окружение
 
 - Python 3.11–3.13 (см. `pyproject.toml`)

@@ -138,8 +138,24 @@ class MaxPlatformClient:
             body["notification"] = notification
         if message is not None:
             body["message"] = message
+        if not body:
+            # Пустое тело {} на практике даёт 400; «невидимое» уведомление — подтверждение нажатия.
+            body["notification"] = "\u2060"
         r = await c.post("/answers", params={"callback_id": callback_id}, json=body)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            detail = ""
+            try:
+                detail = e.response.text[:800]
+            except Exception:
+                pass
+            log.warning(
+                "MAX POST /answers failed status=%s detail=%s",
+                e.response.status_code,
+                detail or str(e),
+            )
+            raise
         return r.json()
 
     async def upload_file_as_attachment(

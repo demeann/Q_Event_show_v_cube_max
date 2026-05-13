@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
+import httpx
 from aiogram.types import BufferedInputFile, FSInputFile
 
 from app.max_platform.client import MaxPlatformClient
 from app.max_platform.telegram_markup import markup_to_max_attachments
+
+log = logging.getLogger(__name__)
 
 
 def _photo_arg_to_path(photo: Any) -> Path:
@@ -181,9 +185,27 @@ class MaxUiCallbackQuery:
         **kwargs: Any,
     ) -> None:
         del kwargs
-        if text is None:
-            await self._client.post_answers(self._callback_id)
-            return
-        await self._client.post_answers(
-            self._callback_id, notification=text, message=None
-        )
+
+        try:
+            if text is None:
+                await self._client.post_answers(self._callback_id)
+            else:
+                await self._client.post_answers(
+                    self._callback_id, notification=text, message=None
+                )
+        except httpx.HTTPStatusError as e:
+            code = e.response.status_code
+            if code in (400, 404):
+                detail = ""
+                try:
+                    detail = e.response.text[:400]
+                except Exception:
+                    pass
+                log.warning(
+                    "MAX POST /answers ignored status=%s callback_id=%s… detail=%s",
+                    code,
+                    self._callback_id[:16],
+                    detail or str(e),
+                )
+                return
+            raise
