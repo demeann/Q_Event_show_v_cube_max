@@ -1,0 +1,75 @@
+# Шаблоны массовых рассылок (коды совпадают с тем, что создаст планировщик в Шаге 11)
+# type: ANNOUNCE | REMINDER | RESULT | CUSTOM
+templates:
+  - code: ANNOUNCE_R1
+    type: ANNOUNCE
+    text: |
+      Привет! Стартует тур 1 — «Кто хочет стать миллионером».
+      Заходи в бота, чтобы сыграть за призовые места Q CLUB.
+    image_path: null
+
+  - code: REMINDER_R1_NOT_STARTED
+    type: REMINDER
+    text: |
+      Напоминание: тур 1 ещё идёт, но ты ещё не начал(а). Заходи в бота и ответь на вопросы без риска уйти в минус по баллам.
+    image_path: null
+
+  - code: REMINDER_R1_NOT_FINISHED
+    type: REMINDER
+    text: |
+      Ты уже начал(а) тур 1 — осталось чуть-чуть. Закончи, пока тур открыт!
+    image_path: null
+
+  - code: RESULT_R1
+    type: RESULT
+    text: |
+      Тур 1 завершён. Спасибо за участие! Следом — анонс тура 2.
+    image_path: null
+
+  - code: ANNOUNCE_R2
+    type: ANNOUNCE
+    text: |
+      Стартует тур 2 — «Своя игра». Выбирай тему, отвечай на вопросы — ошибся в теме, она закроется, но баллы не отнимем.
+    image_path: null
+
+  - code: REMINDER_R2_NOT_STARTED
+    type: REMINDER
+    text: |
+      Тур 2 уже в эфире! Если ещё не начал(а) — самое время заглянуть в бота.
+    image_path: null
+
+  - code: REMINDER_R2_NOT_FINISHED
+    type: REMINDER
+    text: |
+      Тур 2 скоро закончится — ты почти у цели, давай добьём вопросы.
+    image_path: null
+
+  - code: RESULT_R2
+    type: RESULT
+    text: |
+      Тур 2 завершён. Дальше — финальный тур «Где логика»!
+    image_path: null
+
+  - code: ANNOUNCE_R3
+    type: ANNOUNCE
+    text: |
+      Финал! Тур 3 — «Где логика»: смотри на шифровки, выбирай верный вариант из двух.
+    image_path: null
+
+  - code: REMINDER_R3_NOT_STARTED
+    type: REMINDER
+    text: |
+      Финальный тур уже начался — зайди в бота, если ещё не играл(а).
+    image_path: null
+
+  - code: REMINDER_R3_NOT_FINISHED
+    type: REMINDER
+    text: |
+      Остался финальный рывок в туре 3 — закончи механику и проверь свою удачу.
+    image_path: null
+
+  - code: RESULT_R3
+    type: RESULT
+    text: |
+      Игра завершена! Спасибо, что прошёл(прошла) все туры — итоги у админов и в боте.
+    image_path: null

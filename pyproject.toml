@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qclub-bot"
+version = "0.2.1"
+description = "Telegram bot for Q CLUB show-in-cube game (3 rounds, 9 winners each)."
+# 3.14: у pinned pydantic-core / PyO3 пока нет поддержки — см. README «Окружение».
+requires-python = ">=3.11,<3.14"
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/db/migrations/*" = ["E", "F"]
