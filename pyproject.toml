@@ -9,6 +9,32 @@ description = "Telegram bot for Q CLUB show-in-cube game (3 rounds, 9 winners ea
 # 3.14: у pinned pydantic-core / PyO3 пока нет поддержки — см. README «Окружение».
 requires-python = ">=3.11,<3.14"
 readme = "README.md"
+dependencies = [
+    "aiogram==3.13.1",
+    "httpx==0.27.2",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.7.1",
+    "python-dotenv==1.0.1",
+    "SQLAlchemy[asyncio]==2.0.36",
+    "aiomysql==0.2.0",
+    "PyMySQL==1.1.1",
+    "cryptography==43.0.3",
+    "alembic==1.13.3",
+    "APScheduler==3.10.4",
+    "tzdata==2024.2",
+    "PyYAML==6.0.2",
+    "openpyxl==3.1.5",
+    "email-validator==2.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov==5.0.0",
+    "aiosqlite==0.20.0",
+    "ruff==0.7.2",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
