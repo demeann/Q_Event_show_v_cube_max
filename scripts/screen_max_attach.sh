@@ -5,9 +5,9 @@ set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/screen_max_common.sh"
 
-if ! screen_has_session; then
-    echo "Сессия «$SCREEN_MAX_SESSION» не запущена. Старт: ./scripts/screen_max_start.sh" >&2
+if ! screen -r "$SCREEN_MAX_SESSION"; then
+    echo "Не удалось подключиться к «$SCREEN_MAX_SESSION». Текущий список screen:" >&2
+    screen -ls >&2 || true
+    echo "Если сессии нет — запуск: ./scripts/screen_max_start.sh" >&2
     exit 1
 fi
-
-exec screen -r "$SCREEN_MAX_SESSION"
