@@ -61,13 +61,14 @@ def add_days(d: date, days: int) -> date:
 def round_index_for_date(start_date_msk: date, today_msk: date) -> int | None:
     """Какой тур активен на дату `today_msk` при старте игры `start_date_msk`.
 
-    Туров 3, каждый по 3 дня:
-        дни 0..2 → тур 1
-        дни 3..5 → тур 2
-        дни 6..8 → тур 3
+    Тур 1 — четыре календарных дня (смещения 0..3), туры 2 и 3 — по три дня (4..6 и 7..9).
     Возвращает 1, 2, 3 или None (если дата вне игрового окна).
     """
     delta_days = (today_msk - start_date_msk).days
-    if delta_days < 0 or delta_days >= 9:
+    if delta_days < 0 or delta_days > 9:
         return None
-    return delta_days // 3 + 1
+    if delta_days <= 3:
+        return 1
+    if delta_days <= 6:
+        return 2
+    return 3

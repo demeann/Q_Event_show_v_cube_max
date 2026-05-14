@@ -1,5 +1,7 @@
 """Идемпотентный сидер: туры (старт 10:00 МСК в первый день окна), вопросы.
 
+Тур 1 — четыре календарных дня по МСК, туры 2 и 3 — по три дня (подряд после 1-го).
+
 Запуск из корня репозитория::
 
     PYTHONPATH=. python -m scripts.seed_content
@@ -40,22 +42,26 @@ def _msk_range_to_utc_naive(start_day: date, end_day: date) -> tuple:
 
 
 def _round_windows(game_start_msk: date) -> dict[RoundCode, tuple[str, date, date]]:
-    """Имя тура + первый и последний календарный день тура (МСК)."""
+    """Имя тура + первый и последний календарный день тура (МСК).
+
+    Тур 1: четыре календарных дня (старт и ещё три дня). Туры 2 и 3 — по три дня;
+    окна идут подряд без пересечений.
+    """
     return {
         RoundCode.R1: (
             "Кто хочет стать миллионером",
             game_start_msk,
-            add_days(game_start_msk, 2),
+            add_days(game_start_msk, 3),
         ),
         RoundCode.R2: (
             "Своя игра",
-            add_days(game_start_msk, 3),
-            add_days(game_start_msk, 5),
+            add_days(game_start_msk, 4),
+            add_days(game_start_msk, 6),
         ),
         RoundCode.R3: (
             "Где логика",
-            add_days(game_start_msk, 6),
-            add_days(game_start_msk, 8),
+            add_days(game_start_msk, 7),
+            add_days(game_start_msk, 9),
         ),
     }
 
