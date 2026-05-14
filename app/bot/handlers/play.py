@@ -31,8 +31,6 @@ async def cmd_play(message: Message) -> None:
         if active is None:
             await message.answer(
                 "Сейчас нет активного тура.\n\n"
-                "Даты игры совпадают с настройкой внутри Q CLUB — загляни в объявления "
-                "или к организаторам."
             )
             return
 
