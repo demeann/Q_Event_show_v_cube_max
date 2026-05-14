@@ -189,7 +189,7 @@ async def handle_waiting_email_text(
 
     await state_clear()
     await reply_html(_EMAIL_ACCEPTED)
-    # Новая сессия в deliver_pending_tour_pushes увидит verified только после commit.
+    # Отдельная сессия в send_r1_intro… увидит verified только после commit.
     await session.commit()
     if after_email_verified is not None:
         await after_email_verified()

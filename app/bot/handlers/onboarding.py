@@ -17,7 +17,7 @@ from app.bot.states import OnboardingStates
 from app.core.config import get_settings
 from app.db.base import get_session
 from app.messaging.broadcast_adapter import TelegramBroadcastAdapter
-from app.services.tour_start_push import deliver_pending_tour_pushes_for_user
+from app.services.tour_start_push import send_r1_intro_immediately_after_email_verified
 
 router = Router(name="onboarding")
 
@@ -61,7 +61,7 @@ async def process_email(message: Message, state: FSMContext) -> None:
     async def after_verified() -> None:
         if message.bot is None or message.from_user is None:
             return
-        await deliver_pending_tour_pushes_for_user(
+        await send_r1_intro_immediately_after_email_verified(
             TelegramBroadcastAdapter(message.bot),
             platform_user_id=message.from_user.id,
         )

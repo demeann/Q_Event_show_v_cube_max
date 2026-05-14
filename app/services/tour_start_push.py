@@ -1,4 +1,4 @@
-"""Три стартовых пуша: в окне тура (и сразу после верификации email). Telegram и MAX."""
+"""Стартовые пуши туров (интро + кнопка): сразу после почты для R1 и по расписанию в окне тура."""
 
 from __future__ import annotations
 
@@ -96,21 +96,6 @@ def _within_tour_push_window(round_row: Round, now_naive: datetime) -> bool:
     return round_row.starts_at <= now_naive <= round_row.ends_at
 
 
-def _allows_tour_push_now(
-    round_row: Round, now_naive: datetime, *, from_post_verify: bool
-) -> bool:
-    """После верификации почты для R1 можно выслать интро до starts_at (но не после ends_at)."""
-    if _within_tour_push_window(round_row, now_naive):
-        return True
-    if (
-        from_post_verify
-        and round_row.code == RoundCode.R1
-        and now_naive <= round_row.ends_at
-    ):
-        return True
-    return False
-
-
 async def _send_one_push(
     messenger: BroadcastAdapter,
     *,
@@ -144,22 +129,47 @@ async def _send_one_push(
         return False
 
 
+async def send_r1_intro_immediately_after_email_verified(
+    messenger: BroadcastAdapter,
+    *,
+    platform_user_id: int,
+) -> None:
+    """Подряд после текста «Конкурс в кубе»: интро R1 с кнопкой.
+
+    Без проверок окна тура и без проверки ``tour_push_r1_sent_at`` / прогресса.
+    После успешной отправки выставляет ``tour_push_r1_sent_at``, чтобы фоновый
+    джоб не прислал то же второй раз.
+    """
+    async with get_session() as session:
+        user = await session.scalar(
+            select(User).where(User.telegram_user_id == platform_user_id)
+        )
+        if user is None or user.is_blocked:
+            return
+        rnd = await session.scalar(select(Round).where(Round.code == RoundCode.R1))
+        if rnd is None:
+            log.warning("r1 intro after email: нет тура R1 в БД")
+            return
+        ok = await _send_one_push(messenger, user=user, code=RoundCode.R1)
+        if ok:
+            user.tour_push_r1_sent_at = now_utc().replace(tzinfo=None)
+
+
 async def try_send_tour_push_for_user(
     session: AsyncSession,
     messenger: BroadcastAdapter,
     *,
     user_id: int,
     round_row: Round,
-    from_post_verify: bool = False,
 ) -> None:
-    """Отправить пуш тура, если пора и ещё не отправляли."""
+    """Отправить пуш тура (фон), если сейчас в окне тура и ещё не отправляли."""
     user = await session.get(User, user_id)
     if user is None or user.is_blocked:
         return
     if user.email_verified_at is None and not user.is_admin:
         return
     now_naive = now_utc().replace(tzinfo=None)
-    if not _allows_tour_push_now(round_row, now_naive, from_post_verify=from_post_verify):
+    if not _within_tour_push_window(round_row, now_naive):
         return
     col = _sent_column(round_row.code)
     if getattr(user, col.key) is not None:
@@ -178,32 +188,6 @@ async def try_send_tour_push_for_user(
     if ok:
         setattr(user, col.key, now_naive)
         await session.flush()
-
-
-async def deliver_pending_tour_pushes_for_user(
-    messenger: BroadcastAdapter, *, platform_user_id: int
-) -> None:
-    """После верификации: туры в активном окне, по которым пуш ещё не слали."""
-    async with get_session() as session:
-        r = await session.execute(
-            select(Round)
-            .where(Round.code.in_(_ALL_ROUNDS))
-            .order_by(Round.starts_at.asc())
-        )
-        rounds = list(r.scalars().all())
-        user = await session.scalar(
-            select(User).where(User.telegram_user_id == platform_user_id)
-        )
-        if user is None:
-            return
-        for rnd in rounds:
-            await try_send_tour_push_for_user(
-                session,
-                messenger,
-                user_id=user.id,
-                round_row=rnd,
-                from_post_verify=True,
-            )
 
 
 async def process_due_tour_start_pushes(messenger: BroadcastAdapter) -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
@@ -10,7 +11,10 @@ import pytest
 from app.db.models import Round, User, UserRoundProgress
 from app.db.models.progress import RoundProgressStatus
 from app.db.models.round import RoundCode, RoundStatus
-from app.services.tour_start_push import try_send_tour_push_for_user
+from app.services.tour_start_push import (
+    send_r1_intro_immediately_after_email_verified,
+    try_send_tour_push_for_user,
+)
 
 
 @pytest.mark.asyncio
@@ -112,7 +116,9 @@ async def test_try_send_skips_when_round_window_ended(db_session, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_r1_before_starts_sends_when_post_verify(db_session, monkeypatch):
+async def test_send_r1_intro_after_email_sends_without_window_check(
+    db_session, monkeypatch
+):
     calls: list[int] = []
 
     async def fake_send(*_a, **_kw):
@@ -123,6 +129,15 @@ async def test_r1_before_starts_sends_when_post_verify(db_session, monkeypatch):
     monkeypatch.setattr(
         "app.services.tour_start_push.now_utc",
         lambda: datetime(2026, 5, 10, 12, 0, 0, tzinfo=timezone.utc),
+    )
+
+    @asynccontextmanager
+    async def fake_get_session():
+        yield db_session
+
+    monkeypatch.setattr(
+        "app.services.tour_start_push.get_session",
+        fake_get_session,
     )
 
     u = User(
@@ -140,39 +155,59 @@ async def test_r1_before_starts_sends_when_post_verify(db_session, monkeypatch):
     db_session.add(rnd)
     await db_session.flush()
 
-    await try_send_tour_push_for_user(
-        db_session, msgr, user_id=u.id, round_row=rnd, from_post_verify=True
+    await send_r1_intro_immediately_after_email_verified(
+        msgr, platform_user_id=424245
     )
     assert len(calls) == 1
     assert u.tour_push_r1_sent_at is not None
 
 
 @pytest.mark.asyncio
-async def test_r1_before_starts_skips_without_post_verify(db_session, monkeypatch):
-    async def boom(*_a, **_kw):
-        raise AssertionError("send_tour_intro_with_keyboard must not be called")
+async def test_send_r1_intro_after_email_sends_even_with_round_progress(
+    db_session, monkeypatch
+):
+    calls: list[int] = []
+
+    async def fake_send(*_a, **_kw):
+        calls.append(1)
 
     msgr = AsyncMock()
-    msgr.send_tour_intro_with_keyboard = boom
+    msgr.send_tour_intro_with_keyboard = fake_send
+
+    @asynccontextmanager
+    async def fake_get_session():
+        yield db_session
+
     monkeypatch.setattr(
-        "app.services.tour_start_push.now_utc",
-        lambda: datetime(2026, 5, 10, 12, 0, 0, tzinfo=timezone.utc),
+        "app.services.tour_start_push.get_session",
+        fake_get_session,
     )
 
     u = User(
         telegram_user_id=424246,
-        email_verified_at=datetime(2026, 5, 10, 11, 0, 0),
+        email_verified_at=datetime(2026, 1, 1, 12, 0, 0),
     )
     db_session.add(u)
     rnd = Round(
         code=RoundCode.R1,
         name="Тур 1",
-        starts_at=datetime(2026, 5, 14, 0, 0, 0),
-        ends_at=datetime(2026, 5, 20, 23, 59, 59),
+        starts_at=datetime(2026, 1, 1, 0, 0, 0),
+        ends_at=datetime(2030, 1, 1, 0, 0, 0),
         status=RoundStatus.ACTIVE,
     )
     db_session.add(rnd)
     await db_session.flush()
+    db_session.add(
+        UserRoundProgress(
+            user_id=u.id,
+            round_id=rnd.id,
+            status=RoundProgressStatus.NOT_STARTED,
+            total_score=0,
+        )
+    )
+    await db_session.flush()
 
-    await try_send_tour_push_for_user(db_session, msgr, user_id=u.id, round_row=rnd)
-    assert u.tour_push_r1_sent_at is None
+    await send_r1_intro_immediately_after_email_verified(
+        msgr, platform_user_id=424246
+    )
+    assert len(calls) == 1

@@ -61,7 +61,7 @@ from app.max_platform.parse_update import (
 from app.max_platform.shim import MaxUiCallbackQuery, MaxUiMessage
 from app.messaging.broadcast_adapter import MaxBroadcastAdapter
 from app.max_platform.update_batch import ordered_updates
-from app.services.tour_start_push import deliver_pending_tour_pushes_for_user
+from app.services.tour_start_push import send_r1_intro_immediately_after_email_verified
 
 log = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ class MaxUpdateDispatcher:
 
                     async def _after_verified() -> None:
                         msgr = MaxBroadcastAdapter(self._c)
-                        await deliver_pending_tour_pushes_for_user(
+                        await send_r1_intro_immediately_after_email_verified(
                             msgr, platform_user_id=uid
                         )
 
