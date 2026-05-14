@@ -30,10 +30,11 @@ if screen_has_session; then
 fi
 
 cd "$SCREEN_MAX_ROOT"
-export PYTHONPATH="$SCREEN_MAX_ROOT"
 
-# -dm: detached; внутри shell — cd и exec, чтобы в списке процессов был python
-screen -dmS "$SCREEN_MAX_SESSION" bash -lc "cd \"$SCREEN_MAX_ROOT\" && export PYTHONPATH=\"$SCREEN_MAX_ROOT\" && exec \"$SCREEN_MAX_PYTHON\" -m app.bot.main"
+# Не используем bash -lc: на хостинге login shell меняет окружение/кавычки, процесс может не стартовать.
+screen -dmS "$SCREEN_MAX_SESSION" \
+    env "PYTHONPATH=${SCREEN_MAX_ROOT}" \
+    "$SCREEN_MAX_PYTHON" -m app.bot.main
 
 echo "Запущено в screen «$SCREEN_MAX_SESSION». Логи в сессии: ./scripts/screen_max_attach.sh"
 screen -ls | grep "$SCREEN_MAX_SESSION" || true
