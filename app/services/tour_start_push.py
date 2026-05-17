@@ -1,4 +1,4 @@
-"""Стартовые пуши туров (интро + кнопка): сразу после почты для R1 и по расписанию в окне тура."""
+"""Стартовые пуши туров (интро + кнопка): после почты — интро R1, если тур ещё не завершён по БД; иначе по расписанию в окне тура."""
 
 from __future__ import annotations
 
@@ -136,9 +136,9 @@ async def send_r1_intro_immediately_after_email_verified(
 ) -> None:
     """Подряд после текста «Конкурс в кубе»: интро R1 с кнопкой.
 
-    Без проверок окна тура и без проверки ``tour_push_r1_sent_at`` / прогресса.
-    После успешной отправки выставляет ``tour_push_r1_sent_at``, чтобы фоновый
-    джоб не прислал то же второй раз.
+    Не шлём, если момент ``now`` уже **после** ``rounds.ends_at`` для R1 (тур закончился по БД).
+    До старта R1 по-прежнему можно (ранний онбординг). Без проверки ``tour_push_r1_sent_at``
+    и прогресса по туру. После успешной отправки выставляет ``tour_push_r1_sent_at``.
     """
     async with get_session() as session:
         user = await session.scalar(
@@ -149,6 +149,10 @@ async def send_r1_intro_immediately_after_email_verified(
         rnd = await session.scalar(select(Round).where(Round.code == RoundCode.R1))
         if rnd is None:
             log.warning("r1 intro after email: нет тура R1 в БД")
+            return
+        now_naive = now_utc().replace(tzinfo=None)
+        if now_naive > rnd.ends_at:
+            log.info("r1 intro after email: R1 уже завершён (ends_at), не отправляем")
             return
         ok = await _send_one_push(messenger, user=user, code=RoundCode.R1)
         if ok:
