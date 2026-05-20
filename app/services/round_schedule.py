@@ -10,16 +10,12 @@ from app.db.models import Round
 
 
 async def get_playable_round_now(session: AsyncSession) -> Round | None:
-    """Тур, чьё окно [starts_at, ends_at] содержит текущий момент (UTC naive).
-
-    При пересечении окон (последний день R2 и старт R3 в 10:00 МСК) — тур с более
-    поздним ``starts_at`` (актуальный R3, а не ещё не закончившийся по календарю R2).
-    """
+    """Тур, чьё окно [starts_at, ends_at] содержит текущий момент (UTC naive)."""
     now = now_utc().replace(tzinfo=None)
     result = await session.execute(
         select(Round)
         .where(Round.starts_at <= now, Round.ends_at >= now)
-        .order_by(Round.starts_at.desc())
+        .order_by(Round.starts_at.asc())
         .limit(1)
     )
     return result.scalar_one_or_none()
