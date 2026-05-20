@@ -108,6 +108,21 @@ async def _perfect_user_ids(session: AsyncSession, round_id: int, n_questions: i
     return {int(x) for x in r.scalars().all()}
 
 
+async def _perfect_user_ids_by_max_score(
+    session: AsyncSession, round_id: int, n_questions: int
+) -> set[int]:
+    """R2: после seed_content ответы могли пропасть, а ``total_score`` остался максимальным."""
+    if n_questions <= 0:
+        return set()
+    r = await session.execute(
+        select(UserRoundProgress.user_id).where(
+            UserRoundProgress.round_id == round_id,
+            UserRoundProgress.total_score == n_questions,
+        )
+    )
+    return {int(x) for x in r.scalars().all()}
+
+
 def _base_eligible_stmt(round_id: int) -> Select[Any]:
     return (
         select(User.id, UserRoundProgress.total_score)
@@ -126,6 +141,8 @@ async def fetch_ranked_participants(session: AsyncSession, round_row: Round) -> 
     """Участники тура с фильтром eligibility, отсортированные для конкурса."""
     nq = await _questions_count(session, round_row.id)
     perfect = await _perfect_user_ids(session, round_row.id, nq)
+    if round_row.code == RoundCode.R2:
+        perfect |= await _perfect_user_ids_by_max_score(session, round_row.id, nq)
 
     base = await session.execute(_base_eligible_stmt(round_row.id))
     raw: list[tuple[int, int]] = [(int(uid), int(tscore or 0)) for uid, tscore in base.all()]
